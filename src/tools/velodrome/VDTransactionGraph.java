@@ -108,7 +108,7 @@ public class VDTransactionGraph {
         VDTransactionNode node1 = (VDTransactionNode)entry.getKey();
         HashSet<VDTransactionNode> edges = (HashSet<VDTransactionNode>)entry.getValue();
 
-        // fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
+        fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
         
         if(edges == null)
           continue;

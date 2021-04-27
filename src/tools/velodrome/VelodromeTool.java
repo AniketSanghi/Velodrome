@@ -68,10 +68,16 @@ public class VelodromeTool extends Tool {
   }
 
   @Override
+  public void fini() {
+    System.out.println(graph.isAcyclic());
+    graph.dump();
+  }
+
+  @Override
   public void enter(MethodEvent me) {
     ShadowThread st = me.getThread();
-
-    enterTxn(st);
+    String methodName = me.getInfo().getName();
+    enterTxn(st, methodName);
 
     super.enter(me);
   }
@@ -107,7 +113,7 @@ public class VelodromeTool extends Tool {
     VDThreadState currThreadState = threadState.get(st);
     VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
 
-    if(currTxnNode == null) enterTxn(st);
+    if(currTxnNode == null) enterTxn(st, "UnaryAcquire");
 
     VDLockState currLockState = lockState.get(sl);
     graph.addEdge(currLockState.getLastTxnThatReleasedLock(), currTxnNode);
@@ -125,7 +131,7 @@ public class VelodromeTool extends Tool {
     VDThreadState currThreadState = threadState.get(st);
     VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
 
-    if(currTxnNode == null) enterTxn(st);
+    if(currTxnNode == null) enterTxn(st, "UnaryRelease");
 
     VDLockState currLockState = lockState.get(sl);
     currLockState.setLastTxnThatReleasedLock(currTxnNode);
@@ -171,7 +177,7 @@ public class VelodromeTool extends Tool {
       VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
       VDVarState currVar = (VDVarState) var;
 
-      if(currTxnNode == null) enterTxn(st);
+      if(currTxnNode == null) enterTxn(st, "UnaryAccess");
 
       if(event.isWrite()) {
         write(st, currTxnNode, currVar);
@@ -195,11 +201,11 @@ public class VelodromeTool extends Tool {
     super.volatileAccess(event);
   }
 
-  private void enterTxn(ShadowThread st) {
+  private void enterTxn(ShadowThread st, String methodName) {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label);
+      currTxnNode = new VDTransactionNode(label, methodName);
       label += 1;
     }
 
