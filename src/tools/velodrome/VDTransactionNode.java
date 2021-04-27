@@ -3,18 +3,18 @@ package tools.velodrome;
 public class VDTransactionNode {
 
   private int label;
-  private String methodName;
+  // private String methodName;
   private int numberOfInEdges;
 
-  public VDTransactionNode(int myLabel, String methodName) {
+  public VDTransactionNode(int myLabel/*, String methodName*/) {
     label = myLabel;
-    this.methodName = methodName;
+    // this.methodName = methodName;
     numberOfInEdges = 0;
   }
 
-  public String getMethodName(){
-      return methodName;
-  }
+  // public String getMethodName(){
+  //     return methodName;
+  // }
 
   public int getLabel(){
       return label;

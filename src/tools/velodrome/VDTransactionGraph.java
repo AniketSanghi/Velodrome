@@ -11,8 +11,6 @@ public class VDTransactionGraph {
 
   private HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graph;
   
-  private HashMap<VDTransactionNode, Boolean> visited;
-
   public VDTransactionGraph() {
     graph = new HashMap<>();
   }
@@ -38,32 +36,32 @@ public class VDTransactionGraph {
     graph.put(src, neighbours);
   }
 
-  public synchronized void addNode(VDTransactionNode node){
-    graph.put(node, null);
-    visited.put(node, false);
-  }
+  // public synchronized void addNode(VDTransactionNode node){
+  //   graph.put(node, null);
+  //   visited.put(node, false);
+  // }
 
 
-  private synchronized void resetVisited(){
+  // private synchronized void resetVisited(){
 
-    for(VDTransactionNode node : visited.keySet())
-      visited.replace(node, false);
+  //   for(VDTransactionNode node : visited.keySet())
+  //     visited.replace(node, false);
       
-  }
+  // }
 
   /**
    * Check for a cycle in the graph
    */
   public boolean isAcyclic() {
     
+    HashSet<VDTransactionNode> visited = new HashSet<>();
+
     for(VDTransactionNode node : graph.keySet()){
-      if(!visited.get(node) && dfsUtil(node)){
-        resetVisited();
+      if(!visited.contains(node) && dfsUtil(node, visited)){
         return true;
       }
     }
 
-    resetVisited();
     return false;
   }
 
@@ -72,17 +70,17 @@ public class VDTransactionGraph {
    * @param node
    * @return
    */
-  private boolean dfsUtil(VDTransactionNode node){
+  private boolean dfsUtil(VDTransactionNode node, HashSet<VDTransactionNode> visited){
 
     HashSet<VDTransactionNode> neighbours = graph.get(node);
 
     if(neighbours == null || neighbours.isEmpty())
       return false;
     
-    visited.replace(node, true);
+    visited.add(node);
 
     for(VDTransactionNode neighbour : neighbours ){
-      if(visited.get(neighbour) || dfsUtil(neighbour))
+      if(visited.contains(neighbour) || dfsUtil(neighbour, visited))
         return true;
     }
 
@@ -110,7 +108,7 @@ public class VDTransactionGraph {
         VDTransactionNode node1 = (VDTransactionNode)entry.getKey();
         HashSet<VDTransactionNode> edges = (HashSet<VDTransactionNode>)entry.getValue();
 
-        fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
+        // fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
         
         if(edges == null)
           continue;

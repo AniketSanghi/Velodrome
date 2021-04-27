@@ -22,9 +22,6 @@ import rr.state.ShadowLock;
 import rr.state.ShadowThread;
 import rr.state.ShadowVar;
 import rr.tool.Tool;
-import tools.fasttrack.FTBarrierState;
-import tools.fasttrack.FTLockState;
-import tools.fasttrack_sample.FTVarState;
 import tools.util.Epoch;
 import tools.util.VectorClock;
 
