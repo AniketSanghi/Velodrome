@@ -69,7 +69,7 @@ public class VelodromeTool extends Tool {
 
   @Override
   public void fini() {
-    System.out.println(graph.isAcyclic());
+    System.out.println(graph.isCyclic());
     graph.dump();
   }
 

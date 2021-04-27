@@ -52,12 +52,14 @@ public class VDTransactionGraph {
   /**
    * Check for a cycle in the graph
    */
-  public boolean isAcyclic() {
+  public boolean isCyclic() {
     
     HashSet<VDTransactionNode> visited = new HashSet<>();
+    HashSet<VDTransactionNode> active = new HashSet<>();
 
     for(VDTransactionNode node : graph.keySet()){
-      if(!visited.contains(node) && dfsUtil(node, visited)){
+      if(dfsUtil(node, visited, active)){
+        // System.out.println(node.getLabel());
         return true;
       }
     }
@@ -70,20 +72,36 @@ public class VDTransactionGraph {
    * @param node
    * @return
    */
-  private boolean dfsUtil(VDTransactionNode node, HashSet<VDTransactionNode> visited){
-
-    HashSet<VDTransactionNode> neighbours = graph.get(node);
-
-    if(neighbours == null || neighbours.isEmpty())
-      return false;
+  private boolean dfsUtil(VDTransactionNode node, HashSet<VDTransactionNode> visited, HashSet<VDTransactionNode> active){
+    // System.out.println("call " + node.getLabel());
     
-    visited.add(node);
+    if(!visited.contains(node)){  
+      HashSet<VDTransactionNode> neighbours = graph.get(node);
 
-    for(VDTransactionNode neighbour : neighbours ){
-      if(visited.contains(neighbour) || dfsUtil(neighbour, visited))
-        return true;
+      // if(neighbours == null || neighbours.isEmpty())
+      //   return false;
+      
+      visited.add(node);
+      active.add(node);
+
+      if(neighbours == null){
+        // System.out.println("return false " + node.getLabel());
+        active.remove(node);
+        return false;
+      }
+
+      for(VDTransactionNode neighbour : neighbours ){
+        if(!visited.contains(neighbour) && dfsUtil(neighbour, visited, active)){
+          // System.out.println("return true " + node.getLabel());
+          return true;
+        }else if(active.contains(neighbour)){
+          // System.out.println("return true " + node.getLabel());
+          return true;
+        }
+      }
     }
-
+    active.remove(node);
+    // System.out.println("return false " + node.getLabel());
     return false;
   }
 
@@ -95,6 +113,10 @@ public class VDTransactionGraph {
     try {
       File outfile = new File("TXgraph.dot");
       
+      if(outfile.exists())      
+        outfile.delete();
+
+
       if(outfile.createNewFile()){
         System.err.println("File created " + outfile.getName());
       }else{
@@ -108,7 +130,7 @@ public class VDTransactionGraph {
         VDTransactionNode node1 = (VDTransactionNode)entry.getKey();
         HashSet<VDTransactionNode> edges = (HashSet<VDTransactionNode>)entry.getValue();
 
-        fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
+        // fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
         
         if(edges == null)
           continue;
