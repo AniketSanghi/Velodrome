@@ -3,10 +3,13 @@ build
 classes
 docs
 
+!src/rr/instrument/classes
+
 test/*.class
 log
 tmp.java
 .vscode
+/.project
 
 benchmarks/avrora/scratch/*
 benchmarks/batik/scratch/*
