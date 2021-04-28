@@ -86,7 +86,12 @@ public class VelodromeTool extends Tool {
   public void enter(MethodEvent me) {
     ShadowThread st = me.getThread();
     String methodName = me.getInfo().getName();
-    if(!exclusionList.contains(methodName))
+    VDThreadState currThreadState = threadState.get(st);
+
+    if(
+      !exclusionList.contains(methodName) &&
+        currThreadState.getCurrentTxnNode() == null
+    )
       enterTxn(st, methodName);
     super.enter(me);
   }
@@ -95,8 +100,16 @@ public class VelodromeTool extends Tool {
   public void exit(MethodEvent me) {
     ShadowThread st = me.getThread();
     String methodName = me.getInfo().getName();
-    if(!exclusionList.contains(methodName))
+    VDThreadState currThreadState = threadState.get(st);
+    if(
+      !exclusionList.contains(methodName) &&
+        currThreadState
+          .getCurrentTxnNode()
+          .getMethodName()
+          .equals(me.getInfo().getName())
+    ) {
       exitTxn(st);
+    }
     super.exit(me);
   }
 
