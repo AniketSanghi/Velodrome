@@ -7,7 +7,7 @@ import acme.util.decorations.DefaultValue;
 import acme.util.option.CommandLine;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
@@ -257,7 +257,7 @@ public class VelodromeTool extends Tool {
     var.setLastTxnToWrite(currTxnNode);
     graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
 
-    ArrayList<VDTransactionNode> values = var.getLastTxnPerThreadToReadAll();
+    List<VDTransactionNode> values = var.getLastTxnPerThreadToReadAll();
     
     for(VDTransactionNode val: values) {
       graph.addEdge(val, currTxnNode);
