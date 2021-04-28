@@ -1,5 +1,9 @@
 package tools.velodrome;
 
+import java.lang.*;
+import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
 import acme.util.Assert;
 import acme.util.Util;
 import acme.util.decorations.Decoration;
@@ -30,6 +34,7 @@ public class VelodromeTool extends Tool {
 
   private Integer label;
   private VDTransactionGraph graph;
+  Set<String> exclusionList = new HashSet<String>();
 
   private final Decoration<ShadowThread, VDThreadState> threadState =
     ShadowThread.makeDecoration(
@@ -65,6 +70,16 @@ public class VelodromeTool extends Tool {
   public void init() {
     label  = 0;
     graph = new VDTransactionGraph();
+    /* reading the exclusion list */
+    Scanner inpFile;
+    try{
+      inpFile = new Scanner(new File("exclusionList"));
+      while (inpFile.hasNext()) 
+        exclusionList.add(inpFile.nextLine());
+    }catch (FileNotFoundException ex) {
+      System.out.println("There is a problem in File reading");
+    }
+
   }
 
   @Override
@@ -205,7 +220,7 @@ public class VelodromeTool extends Tool {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName);
+      currTxnNode = new VDTransactionNode(label, methodName + "__" + st.getTid() + "__" + label );
       label += 1;
     }
 

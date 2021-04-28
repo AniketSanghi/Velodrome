@@ -1,3 +1,4 @@
+package test;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
@@ -11,8 +12,8 @@ public class QueueNotAtomic extends Thread {
     // for random enque deque parts
     Random rand = new Random();
     // the number of threads
-    static final int NumThreads = 8;
-    static final int ITERS = 10000;
+    static final int NumThreads = 2;
+    static final int ITERS = 4;
     // queue details
     static Queue<Integer> q = new LinkedList<>();
     static int size = 0;
@@ -22,18 +23,18 @@ public class QueueNotAtomic extends Thread {
     public void enqueue(int x) {
         q.add(x);
         ++size;
-        System.out.println("E " + x);
+        // System.out.println("E " + x);
     }
     // dequeue operation
     public void dequeue(){
         if(size == 0){
-            System.out.println("EMPTY");
+            // System.out.println("EMPTY");
             return;
         }
         try{
             int x = q.remove();
             --size;
-            System.out.println("D " + x);
+            // System.out.println("D " + x);
         
         }
         finally{
@@ -43,12 +44,12 @@ public class QueueNotAtomic extends Thread {
     //read the top element
     public void read(){
         if(size == 0){
-            System.out.println("EMPTY");
+            // System.out.println("EMPTY");
             return;
         }
         try{
             int y = q.peek();
-            System.out.println("R " + y);
+            // System.out.println("R " + y);
         }
         finally{
             return;
@@ -59,9 +60,9 @@ public class QueueNotAtomic extends Thread {
     @Override
     public void run() {
         for(int i=0; i<ITERS; ++i){
-            int operatn = rand.nextInt(3);
+            int operatn = i%3;
             if(operatn == 0)
-                this.enqueue(rand.nextInt(3));
+                this.enqueue(i);
             else if(operatn == 1)
                 this.dequeue();
             else if(operatn == 2)

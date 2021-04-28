@@ -136,7 +136,7 @@ public class VDTransactionGraph {
           continue;
 
         for(VDTransactionNode node2 : edges ){
-          fout.write("  " + node1.getLabel() + " -> " + node2.getLabel() + ";\n");
+          fout.write("  " + node1.getMethodName() + " -> " + node2.getMethodName() + ";\n");
         }
       }
 

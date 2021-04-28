@@ -1,3 +1,4 @@
+package test;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
@@ -11,8 +12,8 @@ public class AtomicIncDec extends Thread {
     // for random enque deque parts
     Random rand = new Random();
     // the number of threads
-    static final int NumThreads = 8;
-    static final int ITERS = 100;
+    static final int NumThreads = 2;
+    static final int ITERS = 4;
     // only var
     static int x = 0;
     // the atomicity lock
@@ -37,7 +38,7 @@ public class AtomicIncDec extends Thread {
     public void run() {
 
         for(int i=0; i<ITERS; ++i){
-            int operatn = rand.nextInt(2);
+            int operatn = i%2;
             if(operatn == 0)
                 this.inc();
             else if(operatn == 1)

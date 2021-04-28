@@ -1,3 +1,4 @@
+package test;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
@@ -11,8 +12,8 @@ public class QueueAtomic extends Thread {
     // for random enque deque parts
     Random rand = new Random();
     // the number of threads
-    static final int NumThreads = 8;
-    static final int ITERS = 100;
+    static final int NumThreads = 2;
+    static final int ITERS = 2;
     // queue details
     static Queue<Integer> q = new LinkedList<>();
     static int size = 0;
@@ -58,7 +59,7 @@ public class QueueAtomic extends Thread {
     public void run() {
 
         for(int i=0; i<ITERS; ++i){
-            int operatn = rand.nextInt(3);
+            int operatn = i%3;
             if(operatn == 0)
                 this.enqueue(rand.nextInt(3));
             else if(operatn == 1)
