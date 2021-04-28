@@ -12,8 +12,8 @@ public class AtomicIncDec extends Thread {
     // for random enque deque parts
     Random rand = new Random();
     // the number of threads
-    static final int NumThreads = 2;
-    static final int ITERS = 4;
+    static final int NumThreads = 4;
+    static final int ITERS = 100;
     // only var
     static int x = 0;
     // the atomicity lock

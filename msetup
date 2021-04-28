@@ -44,7 +44,6 @@ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 export JVM_ARGS="-Xmx3g -Xms1g -Xloggc:/dev/stdout"
 
 export PATH=${PATH}:$(pwd)/auto/bin:$(pwd)/bin
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64; export PATH=$JAVA_HOME/bin:$PATH
 export RR_MODE=FAST
 export RR_HOME=$(pwd)
 export RR_TOOLPATH=$(pwd)/classes/rr/simple:$(pwd)/classes/tools
