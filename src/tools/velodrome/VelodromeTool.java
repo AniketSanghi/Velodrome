@@ -85,7 +85,6 @@ public class VelodromeTool extends Tool {
   @Override
   public void fini() {
     System.out.println("#---#" + graph.isCyclic());
-    graph.FullGC();
     graph.dump();
   }
 
@@ -236,7 +235,7 @@ public class VelodromeTool extends Tool {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName,  st.getTid(), threadState.get(st));
+      currTxnNode = new VDTransactionNode(label, methodName );
       label += 1;
     }
 
@@ -258,10 +257,6 @@ public class VelodromeTool extends Tool {
     currThreadState.setLastTxnNode(currTxnNode);
 
     threadState.set(st, currThreadState);
-    
-    currTxnNode.setFinished();
-    
-    graph.GarbageCollection(currTxnNode);
   }
 
   private void read(

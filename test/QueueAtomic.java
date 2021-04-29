@@ -13,7 +13,7 @@ public class QueueAtomic extends Thread {
     Random rand = new Random();
     // the number of threads
     static final int NumThreads = 2;
-    static final int ITERS = 100000;
+    static final int ITERS = 100;
     // queue details
     static Queue<Integer> q = new LinkedList<>();
     static int size = 0;

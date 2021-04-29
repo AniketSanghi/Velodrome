@@ -26,9 +26,6 @@ public class VDVarState implements ShadowVar {
     ShadowThread st,
     VDTransactionNode txn
   ) {
-    if( txn!=null ){
-      if( !txn.varPresentInList(this) ) txn.addToVarList(this);
-    }
     lastTxnPerThreadToRead[st.getTid()] = txn;
   }
 
@@ -37,25 +34,11 @@ public class VDVarState implements ShadowVar {
     return lastTxnPerThreadToRead;
   }
 
-  public synchronized void setLastTxnToWrite(VDTransactionNode txn) {
-    if( txn!=null ){
-      if( !txn.varPresentInList(this) ) txn.addToVarList(this);
-    }
-    lastTxnToWrite = txn;
-  }
-  
-  public synchronized VDTransactionNode getLastTxnToWrite() {
+  public VDTransactionNode getLastTxnToWrite() {
     return lastTxnToWrite;
   }
 
-
-  public synchronized void set2NullForGarbageCollection(VDTransactionNode txn){
-    int tid = txn.getTid();
-    if( lastTxnPerThreadToRead[tid] == txn ) 
-      lastTxnPerThreadToRead[tid] = null;
-    if( lastTxnToWrite == txn ) 
-      lastTxnToWrite = null;
+  public void setLastTxnToWrite(VDTransactionNode txn) {
+    lastTxnToWrite = txn;
   }
-
 }
-

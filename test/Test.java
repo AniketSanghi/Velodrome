@@ -34,7 +34,7 @@ package test;
 
 public class Test extends Thread {
 
-    static final int ITERS = 100;
+    static final int ITERS = 5;
 
     static int y;
 
