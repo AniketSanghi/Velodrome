@@ -1,6 +1,9 @@
 package tools.velodrome;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Arrays;
 import rr.state.ShadowThread;
 import rr.state.ShadowVar;
@@ -8,7 +11,7 @@ import rr.state.ShadowVar;
 public class VDVarState implements ShadowVar {
 
   private VDTransactionNode lastTxnToWrite;
-  private VDTransactionNode[] lastTxnPerThreadToRead;
+  private VDTransactionNode[] lastTxnPerThreadToRead;;
 
   public VDVarState() {
     lastTxnToWrite = null;
@@ -23,11 +26,12 @@ public class VDVarState implements ShadowVar {
     ShadowThread st,
     VDTransactionNode txn
   ) {
-    lastTxnPerThreadToRead[st.getTid()]= txn;
+    lastTxnPerThreadToRead[st.getTid()] = txn;
   }
 
-  public List<VDTransactionNode> getLastTxnPerThreadToReadAll() {
-    return Arrays.asList(lastTxnPerThreadToRead);
+  
+  public VDTransactionNode[] getLastTxnPerThreadToReadAll() {
+    return lastTxnPerThreadToRead;
   }
 
   public VDTransactionNode getLastTxnToWrite() {

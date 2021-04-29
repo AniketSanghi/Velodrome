@@ -36,6 +36,7 @@ public class VDTransactionGraph {
     graph.put(src, neighbours);
   }
 
+
   /**
    * Check for a cycle in the graph
    */
@@ -58,34 +59,33 @@ public class VDTransactionGraph {
    * @param node
    * @return
    */
-  private boolean dfsUtil(
-    VDTransactionNode node,
-    HashSet<VDTransactionNode> visited,
-    HashSet<VDTransactionNode> active)
-  {
+  private boolean dfsUtil(VDTransactionNode node, 
+    HashSet<VDTransactionNode> visited, 
+    HashSet<VDTransactionNode> active){
+    
     if(!visited.contains(node)){  
       HashSet<VDTransactionNode> neighbours = graph.get(node);
-      
+
       visited.add(node);
       active.add(node);
 
       if(neighbours == null){
+        // System.out.println("return false " + node.getLabel());
         active.remove(node);
         return false;
       }
 
       for(VDTransactionNode neighbour : neighbours ){
-        if (
-          !visited.contains(neighbour) &&
-            dfsUtil(neighbour, visited, active)) {
+        if(!visited.contains(neighbour) && 
+          dfsUtil(neighbour, visited, active)){
           return true;
-        } else if (active.contains(neighbour)) {
+        }else if(active.contains(neighbour)){
           return true;
         }
       }
     }
-
     active.remove(node);
+    // System.out.println("return false " + node.getLabel());
     return false;
   }
 
@@ -114,13 +114,12 @@ public class VDTransactionGraph {
         VDTransactionNode node1 = (VDTransactionNode)entry.getKey();
         HashSet<VDTransactionNode> edges = (HashSet<VDTransactionNode>)entry.getValue();
 
-         fout.write("  " + node1.getLabel() + " [ label = \"" + node1.getMethodName() + "\" ];");
-
+        
         if(edges == null)
           continue;
 
         for(VDTransactionNode node2 : edges ){
-          fout.write("  " + node1.getMethodName() + " -> " + node2.getMethodName() + ";\n");
+          fout.write("  " + node1.getId() + " -> " + node2.getId() + ";\n");
         }
       }
 

@@ -1,27 +1,33 @@
 package tools.velodrome;
 
+import java.lang.*;
+import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
 import acme.util.Assert;
+import acme.util.Util;
 import acme.util.decorations.Decoration;
 import acme.util.decorations.DecorationFactory;
 import acme.util.decorations.DefaultValue;
+import acme.util.decorations.NullDefault;
 import acme.util.option.CommandLine;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.List;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.ArrayList;
 import rr.annotations.Abbrev;
+import rr.barrier.BarrierMonitor;
 import rr.event.AccessEvent;
 import rr.event.AcquireEvent;
+import rr.event.FieldAccessEvent;
 import rr.event.MethodEvent;
 import rr.event.NewThreadEvent;
 import rr.event.ReleaseEvent;
 import rr.event.VolatileAccessEvent;
+import rr.meta.ClassInfo;
 import rr.state.ShadowLock;
 import rr.state.ShadowThread;
 import rr.state.ShadowVar;
 import rr.tool.Tool;
+import tools.util.Epoch;
+import tools.util.VectorClock;
 
 @Abbrev("VD")
 public class VelodromeTool extends Tool {
@@ -87,12 +93,13 @@ public class VelodromeTool extends Tool {
     ShadowThread st = me.getThread();
     String methodName = me.getInfo().getName();
     VDThreadState currThreadState = threadState.get(st);
-
+    
     if(
       !exclusionList.contains(methodName) &&
         currThreadState.getCurrentTxnNode() == null
     )
       enterTxn(st, methodName);
+
     super.enter(me);
   }
 
@@ -101,15 +108,16 @@ public class VelodromeTool extends Tool {
     ShadowThread st = me.getThread();
     String methodName = me.getInfo().getName();
     VDThreadState currThreadState = threadState.get(st);
+
     if(
       !exclusionList.contains(methodName) &&
-        currThreadState
-          .getCurrentTxnNode()
-          .getMethodName()
-          .equals(me.getInfo().getName())
-    ) {
+      currThreadState
+        .getCurrentTxnNode()
+        .getMethodName()
+        .equals(me.getInfo().getName())
+    )
       exitTxn(st);
-    }
+
     super.exit(me);
   }
 
@@ -227,7 +235,7 @@ public class VelodromeTool extends Tool {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName + "__" + st.getTid() + "__" + label );
+      currTxnNode = new VDTransactionNode(label, methodName );
       label += 1;
     }
 
@@ -270,7 +278,7 @@ public class VelodromeTool extends Tool {
     var.setLastTxnToWrite(currTxnNode);
     graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
 
-    List<VDTransactionNode> values = var.getLastTxnPerThreadToReadAll();
+    VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
     
     for(VDTransactionNode val: values) {
       graph.addEdge(val, currTxnNode);

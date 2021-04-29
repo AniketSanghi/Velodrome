@@ -5,10 +5,12 @@ public class VDTransactionNode {
   private int label;
   private String methodName;
   private int numberOfInEdges;
+  private String txnId;
 
   public VDTransactionNode(int myLabel, String methodName) {
     label = myLabel;
     this.methodName = methodName;
+    this.txnId = methodName + "__" + label;
     numberOfInEdges = 0;
   }
 
@@ -18,6 +20,10 @@ public class VDTransactionNode {
 
   public int getLabel(){
       return label;
+  }
+
+  public String getId(){
+      return txnId;
   }
 
   @Override
