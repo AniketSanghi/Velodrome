@@ -26,4 +26,9 @@ public class VDThreadState {
     lastTxnNode = node;
   }
 
+  public void set2NullForGarbageCollection(VDTransactionNode txn){
+    if( lastTxnNode == txn)
+      lastTxnNode = null;
+  }
+
 }

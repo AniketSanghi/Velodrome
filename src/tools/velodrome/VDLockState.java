@@ -13,6 +13,16 @@ public class VDLockState {
   }
 
   public void setLastTxnThatReleasedLock(VDTransactionNode txn) {
+    if(txn != null){
+      if( !txn.lockPresentInList(this) )
+        txn.addToLockList(this);
+    }
     lockReleaseLastTxn = txn;
   }
+
+  public void set2NullForGarbageCollection(VDTransactionNode txn){
+    if( lockReleaseLastTxn == txn)
+      lockReleaseLastTxn = null;
+  }
+  
 }

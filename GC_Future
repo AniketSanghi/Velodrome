@@ -1,0 +1,48 @@
+/**
+   * For garbage collection root is the given node
+   * then the BFS traversal done to identify the
+   * nodes with no parent these will be Garbage Collected
+   * @param node
+   * @return void (VDTransactionGraph will be modified)
+   */
+  public List<VDTransactionNode> helperGC( VDTransactionNode root){
+
+    Queue<VDTransactionNode> bfsQ = new LinkedList<VDTransactionNode>();
+    bfsQ.add(root);
+    List<VDTransactionNode> remSet = new LinkedList<VDTransactionNode>();
+
+    while(!bfsQ.isEmpty()){
+      
+      VDTransactionNode parent = bfsQ.poll();                                   /** remove the parent and add the childern to the list */
+      
+      if( parent.isFinished() && parent.getNumberOfInEdges()==0 && !remSet.contains(parent) ){             /** enqueing the children */
+        HashSet<VDTransactionNode> neighbours = graph.get(parent);
+        
+        if(neighbours != null){
+          for(VDTransactionNode child: neighbours) {
+            child.decNumberOfInEdges();
+            bfsQ.add(child);
+          }
+        }
+        remSet.add(parent);
+        parent.setRefrences2Null();
+      }
+    }
+
+    return remSet;
+  }
+
+  public synchronized void FullGC(){
+    
+    Set<VDTransactionNode> currKeySet = graph.keySet();
+    List<VDTransactionNode> remSet = new LinkedList<VDTransactionNode>();
+    for(VDTransactionNode root: currKeySet){
+      if(remSet.contains(root))
+        continue;
+      remSet.addAll(helperGC(root));
+    }
+    for(VDTransactionNode node: remSet){
+      graph.remove(node);
+    }
+    return;
+  }
