@@ -266,7 +266,9 @@ public class VelodromeTool extends Tool {
     threadState.set(st, currThreadState);
 
     currTxnNode.txnFinished();
-    graph.GarbageCollection(currTxnNode);
+
+    // Comment below line to not do GC
+    // graph.GarbageCollection(currTxnNode);
   }
 
   private void read(

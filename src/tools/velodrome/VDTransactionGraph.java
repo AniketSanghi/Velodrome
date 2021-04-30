@@ -205,6 +205,10 @@ public class VDTransactionGraph {
     visited.add(node);
 
     HashSet<VDTransactionNode> neighbors = graphReverse.get(node);
+
+    if (neighbors == null)
+      return;
+      
     for (VDTransactionNode neighbor : neighbors) {
       if (!visited.contains(neighbor)) {
         dfsUnaryNodes(graphReverse, neighbor, visited);
@@ -222,16 +226,18 @@ public class VDTransactionGraph {
     for (Map.Entry<VDTransactionNode, HashSet<VDTransactionNode>> entry : graph.entrySet()) {
 
       VDTransactionNode src = (VDTransactionNode)entry.getKey();
-      HashSet<VDTransactionNode> destinations = (HashSet<VDTransactionNode>)entry.getValue();
+      HashSet<VDTransactionNode> neighbors = (HashSet<VDTransactionNode>)entry.getValue();
 
-      for (VDTransactionNode dest : destinations) {
+      if (neighbors == null) continue;
+      
+      for (VDTransactionNode neighbor : neighbors) {
 
-        HashSet<VDTransactionNode> neighbours = graphReverse.get(dest);
+        HashSet<VDTransactionNode> reverseNeighbours = graphReverse.get(neighbor);
 
-        if(neighbours == null) neighbours = new HashSet<VDTransactionNode>();
+        if(reverseNeighbours == null) reverseNeighbours = new HashSet<VDTransactionNode>();
     
-        neighbours.add(src);
-        graphReverse.put(dest, neighbours); 
+        reverseNeighbours.add(src);
+        graphReverse.put(neighbor, reverseNeighbours); 
       }
     }
 
