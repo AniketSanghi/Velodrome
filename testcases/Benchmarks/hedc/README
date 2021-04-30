@@ -1,0 +1,8 @@
+To execute HEDC, the html directory and the properties.txt file is required at
+the same hierarchy from where it is being run
+
+java hedc.Tester 
+
+Execute RR/Atomizer:
+  rrrun -tool=A hedc.Tester
+  

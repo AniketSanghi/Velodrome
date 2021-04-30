@@ -25,3 +25,5 @@ benchmarks/dacapo-9.12-MR1-bach.jar
 *.dot
 *.ps
 TXgraph.pdf
+testcases/**/*.class
+output
