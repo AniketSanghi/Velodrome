@@ -149,11 +149,12 @@ public class VDTransactionGraph {
     int tid) {
 
     // remove all the null nodes and logically deleted nodes from input nodes
-    ListIterator<VDTransactionNode> iter = mergeInputNodes.listIterator();
-    while (iter.hasNext()) {
-      if (iter.next() == null || iter.next().isDeleted())
-        iter.remove();
+    for (int i = 0; i < mergeInputNodes.size(); i++) {
+      if (mergeInputNodes.get(i) != null && mergeInputNodes.get(i).isDeleted()) {
+        mergeInputNodes.set(i, null);
+      }
     }
+    mergeInputNodes.removeAll(Collections.singletonList(null));
     
     if (mergeInputNodes.size() == 0) return null;
 
