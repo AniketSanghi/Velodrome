@@ -8,9 +8,10 @@ class=`echo $1 | tr "/" "."`
 javac "$dir"/*.java
 rrrun -tool=VD -field=FINE -array=FINE -noTidGC -availableProcessors=4 $class
 
-for dotfile in *.dot
+for dotfile in `ls *.dot`
 do
-    dot -Tps $dotfile -o $dotfile.ps 
+    psfile=`echo $dotfile | rev | cut -d "." -f 2- | rev`
+    dot -Tps $dotfile -o "$psfile".ps 
 done
 
 mkdir -p output/$class
