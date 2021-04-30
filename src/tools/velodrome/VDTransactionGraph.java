@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.Map;
 import java.util.List;
 import java.util.ListIterator;
@@ -29,7 +30,8 @@ public class VDTransactionGraph {
    */
   public synchronized void addEdge(
     VDTransactionNode src,
-    VDTransactionNode dest
+    VDTransactionNode dest,
+    Set<String> methodsViolatingAtomicity
   ) {
     if(src == dest || src == null || dest == null || src.isDeleted() || dest.isDeleted())
       return;
@@ -50,6 +52,9 @@ public class VDTransactionGraph {
       neighbours.remove(dest);
       dest.decNumberOfInEdges();
       graph.put(src, neighbours);
+
+      if (methodsViolatingAtomicity != null)
+        methodsViolatingAtomicity.add(dest.getMethodInfo());
       return;
     }
   }
@@ -165,12 +170,12 @@ public class VDTransactionGraph {
     
     VDTransactionNode newUnaryNode;
     synchronized (label) {
-      newUnaryNode = new VDTransactionNode(label, nodeName, tid);
+      newUnaryNode = new VDTransactionNode(label, nodeName, tid, null);
       label += 1;
     }
 
     for(VDTransactionNode node: mergeInputNodes) {
-      addEdge(node, newUnaryNode);
+      addEdge(node, newUnaryNode, null);
     }
 
     return newUnaryNode;

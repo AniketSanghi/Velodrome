@@ -4,21 +4,24 @@ public class VDTransactionNode {
 
   private int label;
   private String methodName;
+  private String methodInfo;
   private int numberOfInEdges;
   private String txnId;
 
   private boolean txnDeleted = false;
   private boolean txnFinished = false;
 
-  public VDTransactionNode(int myLabel, String methodName, int tid) {
+  public VDTransactionNode(int myLabel, String methodName, int tid, String methodInfo) {
     label = myLabel;
     this.methodName = methodName;
+    this.methodInfo = methodInfo;
     this.txnId = methodName + "__" + tid + "__" + myLabel;
     numberOfInEdges = 0;
   }
 
   public int getLabel(){ return label; }
   public String getMethodName(){ return methodName; }
+  public String getMethodInfo(){ return methodInfo; }
   public String getId(){ return txnId; }
 
   public synchronized void incNumberOfInEdges(){ ++numberOfInEdges; }

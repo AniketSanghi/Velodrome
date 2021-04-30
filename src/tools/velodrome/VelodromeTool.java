@@ -4,6 +4,9 @@ import java.lang.*;
 import java.util.*;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.FileWriter;
+
 import acme.util.Assert;
 import acme.util.Util;
 import acme.util.decorations.Decoration;
@@ -11,8 +14,6 @@ import acme.util.decorations.DecorationFactory;
 import acme.util.decorations.DefaultValue;
 import acme.util.decorations.NullDefault;
 import acme.util.option.CommandLine;
-import java.util.List;
-import java.util.ArrayList;
 import rr.annotations.Abbrev;
 import rr.barrier.BarrierMonitor;
 import rr.event.AccessEvent;
@@ -36,6 +37,7 @@ public class VelodromeTool extends Tool {
   private Integer label;
   private VDTransactionGraph graph;
   Set<String> exclusionList = new HashSet<String>();
+  Set<String> methodsViolatingAtomicity = new HashSet<>();
 
   private final Decoration<ShadowThread, VDThreadState> threadState =
     ShadowThread.makeDecoration(
@@ -86,19 +88,33 @@ public class VelodromeTool extends Tool {
   @Override
   public void fini() {
     System.out.println("#---#" + graph.isCyclic());
+
+    try {
+      FileWriter fw = new FileWriter("outExclusionList.txt");
+   
+      for (String method : methodsViolatingAtomicity) {
+        fw.write(method + "\n");
+      }
+    
+      fw.close();
+    }
+    catch (IOException ioe) {
+      System.out.println("There is a problem in File Writing");
+    }
   }
 
   @Override
   public void enter(MethodEvent me) {
     ShadowThread st = me.getThread();
     String methodName = me.getInfo().getName();
+    String methodInfo = me.getInfo().getKey();
     VDThreadState currThreadState = threadState.get(st);
     
     if(
-      !exclusionList.contains(methodName) &&
+      !exclusionList.contains(methodInfo) &&
         currThreadState.getCurrentTxnNode() == null
     )
-      enterTxn(st, methodName);
+      enterTxn(st, methodName, methodInfo);
 
     super.enter(me);
   }
@@ -107,14 +123,15 @@ public class VelodromeTool extends Tool {
   public void exit(MethodEvent me) {
     ShadowThread st = me.getThread();
     String methodName = me.getInfo().getName();
+    String methodInfo = me.getInfo().getKey();
     VDThreadState currThreadState = threadState.get(st);
 
     if(
-      !exclusionList.contains(methodName) &&
+      !exclusionList.contains(methodInfo) &&
       currThreadState
         .getCurrentTxnNode()
-        .getMethodName()
-        .equals(me.getInfo().getName())
+        .getMethodInfo()
+        .equals(me.getInfo().getKey())
     )
       exitTxn(st);
 
@@ -156,7 +173,7 @@ public class VelodromeTool extends Tool {
       threadState.set(st, currThreadState);
     }
     else {
-      graph.addEdge(currLockState.getLastTxnThatReleasedLock(), currTxnNode);
+      graph.addEdge(currLockState.getLastTxnThatReleasedLock(), currTxnNode, methodsViolatingAtomicity);
     }
 
     super.acquire(event);
@@ -237,17 +254,17 @@ public class VelodromeTool extends Tool {
     super.volatileAccess(event);
   }
 
-  private void enterTxn(ShadowThread st, String methodName) {
+  private void enterTxn(ShadowThread st, String methodName, String methodInfo) {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName, st.getTid() );
+      currTxnNode = new VDTransactionNode(label, methodName, st.getTid(), methodInfo);
       label += 1;
     }
 
     VDThreadState currThreadState = threadState.get(st);
 
-    graph.addEdge(currThreadState.getLastTxnNode(), currTxnNode);
+    graph.addEdge(currThreadState.getLastTxnNode(), currTxnNode, methodsViolatingAtomicity);
     currThreadState.setCurrentTxnNode(currTxnNode);
 
     threadState.set(st, currThreadState);
@@ -292,7 +309,7 @@ public class VelodromeTool extends Tool {
     }
     else {
       var.setLastTxnToReadForThread(st, currTxnNode);
-      graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
+      graph.addEdge(var.getLastTxnToWrite(), currTxnNode, methodsViolatingAtomicity);
     }
   }
 
@@ -324,12 +341,12 @@ public class VelodromeTool extends Tool {
     }
     else {
       var.setLastTxnToWrite(currTxnNode);
-      graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
+      graph.addEdge(var.getLastTxnToWrite(), currTxnNode, methodsViolatingAtomicity);
   
       VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
       
       for(VDTransactionNode val: values) {
-        graph.addEdge(val, currTxnNode);
+        graph.addEdge(val, currTxnNode, methodsViolatingAtomicity);
       }
     }
 
