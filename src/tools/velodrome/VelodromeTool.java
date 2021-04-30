@@ -11,6 +11,7 @@ import acme.util.decorations.DecorationFactory;
 import acme.util.decorations.DefaultValue;
 import acme.util.decorations.NullDefault;
 import acme.util.option.CommandLine;
+import java.util.List;
 import java.util.ArrayList;
 import rr.annotations.Abbrev;
 import rr.barrier.BarrierMonitor;
@@ -142,13 +143,22 @@ public class VelodromeTool extends Tool {
 
     VDThreadState currThreadState = threadState.get(st);
     VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
-
-    if(currTxnNode == null) enterTxn(st, "UnaryAcquire");
-
     VDLockState currLockState = lockState.get(sl);
-    graph.addEdge(currLockState.getLastTxnThatReleasedLock(), currTxnNode);
 
-    if(currTxnNode == null) exitTxn(st);
+    if(currTxnNode == null) {
+      
+      List<VDTransactionNode> mergeInputNodes = new ArrayList<VDTransactionNode>();
+      mergeInputNodes.add(currThreadState.getLastTxnNode());
+      mergeInputNodes.add(currLockState.getLastTxnThatReleasedLock());
+
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryAcquire");
+      
+      currThreadState.setLastTxnNode(happensAfterNode);
+      threadState.set(st, currThreadState);
+    }
+    else {
+      graph.addEdge(currLockState.getLastTxnThatReleasedLock(), currTxnNode);
+    }
 
     super.acquire(event);
   }
@@ -160,14 +170,15 @@ public class VelodromeTool extends Tool {
 
     VDThreadState currThreadState = threadState.get(st);
     VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
-
-    if(currTxnNode == null) enterTxn(st, "UnaryRelease");
-
     VDLockState currLockState = lockState.get(sl);
-    currLockState.setLastTxnThatReleasedLock(currTxnNode);
-    lockState.set(sl, currLockState);
 
-    if(currTxnNode == null) exitTxn(st);
+    if(currTxnNode == null) {
+      currLockState.setLastTxnThatReleasedLock(currThreadState.getLastTxnNode());
+    }
+    else {
+      currLockState.setLastTxnThatReleasedLock(currTxnNode);
+    }
+    lockState.set(sl, currLockState);
 
     super.release(event);
   }
@@ -207,15 +218,11 @@ public class VelodromeTool extends Tool {
       VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
       VDVarState currVar = (VDVarState) var;
 
-      if(currTxnNode == null) enterTxn(st, "UnaryAccess");
-
       if(event.isWrite()) {
         write(st, currTxnNode, currVar);
       } else {
         read(st, currTxnNode, currVar);
       }
-
-      if(currTxnNode == null) exitTxn(st);
 
     } else {
       super.access(event);
@@ -265,8 +272,24 @@ public class VelodromeTool extends Tool {
     VDVarState var
   ) {
 
-    var.setLastTxnToReadForThread(st, currTxnNode);
-    graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
+    if (currTxnNode == null) {
+      VDThreadState currThreadState = threadState.get(st);
+
+      List<VDTransactionNode> mergeInputNodes = new ArrayList<VDTransactionNode>();
+      mergeInputNodes.add(currThreadState.getLastTxnNode());
+      mergeInputNodes.add(var.getLastTxnToWrite());
+
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryRead");
+      
+      var.setLastTxnToReadForThread(st, happensAfterNode);
+
+      currThreadState.setLastTxnNode(happensAfterNode);
+      threadState.set(st, currThreadState);
+    }
+    else {
+      var.setLastTxnToReadForThread(st, currTxnNode);
+      graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
+    }
   }
 
   private void write(
@@ -275,13 +298,36 @@ public class VelodromeTool extends Tool {
     VDVarState var
   ) {
 
-    var.setLastTxnToWrite(currTxnNode);
-    graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
+    if (currTxnNode == null) {
+      VDThreadState currThreadState = threadState.get(st);
 
-    VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
-    
-    for(VDTransactionNode val: values) {
-      graph.addEdge(val, currTxnNode);
+      List<VDTransactionNode> mergeInputNodes = new ArrayList<VDTransactionNode>();
+      mergeInputNodes.add(currThreadState.getLastTxnNode());
+      mergeInputNodes.add(var.getLastTxnToWrite());
+
+      VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
+      
+      for(VDTransactionNode val: values) {
+        mergeInputNodes.add(val);
+      }
+
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryWrite");
+      
+      var.setLastTxnToWrite(happensAfterNode);
+
+      currThreadState.setLastTxnNode(happensAfterNode);
+      threadState.set(st, currThreadState);
     }
+    else {
+      var.setLastTxnToWrite(currTxnNode);
+      graph.addEdge(var.getLastTxnToWrite(), currTxnNode);
+  
+      VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
+      
+      for(VDTransactionNode val: values) {
+        graph.addEdge(val, currTxnNode);
+      }
+    }
+
   }
 }

@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class VDTransactionGraph {
 
@@ -87,6 +90,115 @@ public class VDTransactionGraph {
     active.remove(node);
     // System.out.println("return false " + node.getLabel());
     return false;
+  }
+
+  /**
+   * find a possible happens-after node (or a completely new node)
+   * for the given list of nodes and update graph accordingly
+   */
+  public synchronized VDTransactionNode merge(List<VDTransactionNode> mergeInputNodes,
+    Integer label,
+    String nodeName) {
+
+    // remove all the null nodes from input nodes
+    mergeInputNodes.removeAll(Collections.singletonList(null));
+    
+    if (mergeInputNodes.size() == 0) return null;
+
+    VDTransactionNode happensAfterNode = getHappensAfterNode(mergeInputNodes);
+    if (happensAfterNode != null) {
+      return happensAfterNode;
+    }
+    
+    VDTransactionNode newUnaryNode;
+    synchronized (label) {
+      newUnaryNode = new VDTransactionNode(label, nodeName);
+      label += 1;
+    }
+
+    for(VDTransactionNode node: mergeInputNodes) {
+      addEdge(node, newUnaryNode);
+    }
+
+    return newUnaryNode;
+  }
+
+  /**
+   * returns a happens-after node if possible or null
+   */
+  public VDTransactionNode getHappensAfterNode(List<VDTransactionNode> mergeInputNodes) {
+
+    HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graphReverse = getReverseGraph();
+
+    HashSet<VDTransactionNode> notPossibleHappensBeforeNodes = new HashSet<>();
+    HashSet<VDTransactionNode> visited = new HashSet<>();
+
+    for (VDTransactionNode possibleHappensBeforeNode : mergeInputNodes) {
+      if (notPossibleHappensBeforeNodes.contains(possibleHappensBeforeNode))
+        continue;
+
+      visited.clear();
+      dfsUnaryNodes(graphReverse, possibleHappensBeforeNode, visited);
+
+      boolean isSink = true;
+      for (VDTransactionNode node : mergeInputNodes) {
+        if (visited.contains(node)) {
+          notPossibleHappensBeforeNodes.add(node);
+        }
+        else {
+          isSink = false;
+        }
+      }
+
+      if (isSink) {
+        return possibleHappensBeforeNode;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * dfs for unary transactions optimization
+   */
+  public void dfsUnaryNodes(HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graphReverse,
+    VDTransactionNode node,
+    HashSet<VDTransactionNode> visited) {
+
+    visited.add(node);
+
+    HashSet<VDTransactionNode> neighbors = graphReverse.get(node);
+    for (VDTransactionNode neighbor : neighbors) {
+      if (!visited.contains(neighbor)) {
+        dfsUnaryNodes(graphReverse, neighbor, visited);
+      }
+    }
+
+  }
+
+  /**
+   * construct reverse of graph
+   */
+  public HashMap<VDTransactionNode, HashSet<VDTransactionNode>> getReverseGraph() {
+
+    HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graphReverse = new HashMap<>();
+    for (Map.Entry<VDTransactionNode, HashSet<VDTransactionNode>> entry : graph.entrySet()) {
+
+      VDTransactionNode src = (VDTransactionNode)entry.getKey();
+      HashSet<VDTransactionNode> destinations = (HashSet<VDTransactionNode>)entry.getValue();
+
+      for (VDTransactionNode dest : destinations) {
+
+        HashSet<VDTransactionNode> neighbours = graphReverse.get(dest);
+
+        if(neighbours == null) neighbours = new HashSet<VDTransactionNode>();
+    
+        neighbours.add(src);
+        graphReverse.put(dest, neighbours); 
+      }
+    }
+
+    return graphReverse;
   }
 
   /**
