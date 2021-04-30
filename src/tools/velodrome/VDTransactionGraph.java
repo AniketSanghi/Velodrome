@@ -46,7 +46,7 @@ public class VDTransactionGraph {
     graph.put(src, neighbours);
 
     if(this.isCyclic()){
-      this.dump(src.getId() + "_" + dest.getId() + "cycle.dot");
+      this.dump(src.getId(), dest.getId());
       neighbours.remove(dest);
       dest.decNumberOfInEdges();
       graph.put(src, neighbours);
@@ -262,10 +262,10 @@ public class VDTransactionGraph {
   /**
    * Dump the whole graph into a file in DOT format
    */
-  public synchronized void dump(String fileName){
+  public synchronized void dump(String srcId, String destId){
     
     try {
-      File outfile = new File(fileName);
+      File outfile = new File(srcId + "_" + destId + "cycle.dot");
       
       if(outfile.exists())      
         outfile.delete();
@@ -280,6 +280,9 @@ public class VDTransactionGraph {
       FileWriter fout = new FileWriter(outfile);
       fout.write("digraph G { \n");
 
+      // configure display of graph
+      fout.write(destId + "[shape=diamond, penwidth=3, style=filled, fillcolor=\"#9ACEEB\"];\n");
+
       for (Map.Entry<VDTransactionNode, HashSet<VDTransactionNode>> entry : graph.entrySet()) {
         VDTransactionNode node1 = (VDTransactionNode)entry.getKey();
         HashSet<VDTransactionNode> edges = (HashSet<VDTransactionNode>)entry.getValue();
@@ -289,7 +292,12 @@ public class VDTransactionGraph {
           continue;
 
         for(VDTransactionNode node2 : edges ){
-          fout.write("  " + node1.getId() + " -> " + node2.getId() + ";\n");
+
+          String graphConfigure = "";
+          if (node1.getId() == srcId && node2.getId() == destId) {
+            graphConfigure = "[penwidth=5]";
+          }
+          fout.write("  " + node1.getId() + " -> " + node2.getId() + graphConfigure + ";\n");
         }
       }
 
