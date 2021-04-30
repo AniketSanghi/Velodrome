@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Collections;
 import java.util.Queue;
 import java.util.LinkedList;
@@ -147,8 +148,12 @@ public class VDTransactionGraph {
     String nodeName,
     int tid) {
 
-    // remove all the null nodes from input nodes
-    mergeInputNodes.removeAll(Collections.singletonList(null));
+    // remove all the null nodes and logically deleted nodes from input nodes
+    ListIterator<VDTransactionNode> iter = mergeInputNodes.listIterator();
+    while (iter.hasNext()) {
+      if (iter.next() == null || iter.next().isDeleted())
+        iter.remove();
+    }
     
     if (mergeInputNodes.size() == 0) return null;
 
