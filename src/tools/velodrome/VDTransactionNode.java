@@ -4,7 +4,7 @@ public class VDTransactionNode {
 
   private int label;
   private String methodName;
-  private volatile int numberOfInEdges;
+  private int numberOfInEdges;
   private String txnId;
 
   private boolean txnDeleted = false;
@@ -21,9 +21,9 @@ public class VDTransactionNode {
   public String getMethodName(){ return methodName; }
   public String getId(){ return txnId; }
 
-  public void incNumberOfInEdges(){ ++numberOfInEdges; }
-  public void decNumberOfInEdges(){ --numberOfInEdges; }
-  public int getNumberOfInEdges(){ return numberOfInEdges; }
+  public synchronized void incNumberOfInEdges(){ ++numberOfInEdges; }
+  public synchronized void decNumberOfInEdges(){ --numberOfInEdges; }
+  public synchronized int getNumberOfInEdges(){ return numberOfInEdges; }
 
   public void txnDelete(){ txnDeleted = true; }
   public boolean isDeleted(){ return txnDeleted; }

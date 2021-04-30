@@ -86,7 +86,6 @@ public class VelodromeTool extends Tool {
   @Override
   public void fini() {
     System.out.println("#---#" + graph.isCyclic());
-    graph.dump();
   }
 
   @Override
@@ -268,7 +267,7 @@ public class VelodromeTool extends Tool {
     currTxnNode.txnFinished();
 
     // Comment below line to not do GC
-    // graph.GarbageCollection(currTxnNode);
+    graph.GarbageCollection(currTxnNode);
   }
 
   private void read(

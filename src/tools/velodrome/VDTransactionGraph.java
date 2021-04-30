@@ -30,17 +30,27 @@ public class VDTransactionGraph {
     VDTransactionNode src,
     VDTransactionNode dest
   ) {
-    if(src == dest || src == null || dest == null)
+    if(src == dest || src == null || dest == null || src.isDeleted() || dest.isDeleted())
       return;
 
     HashSet<VDTransactionNode> neighbours = graph.get(src);
 
     if(neighbours == null) neighbours = new HashSet<VDTransactionNode>();
 
+    if(neighbours.contains(dest))
+      return;
+
     neighbours.add(dest);
-    if(dest != null)
-      dest.incNumberOfInEdges();
+    dest.incNumberOfInEdges();
     graph.put(src, neighbours);
+
+    if(this.isCyclic()){
+      this.dump(src.getId() + "_" + dest.getId() + "cycle.dot");
+      neighbours.remove(dest);
+      dest.decNumberOfInEdges();
+      graph.put(src, neighbours);
+      return;
+    }
   }
 
   /**
@@ -247,10 +257,10 @@ public class VDTransactionGraph {
   /**
    * Dump the whole graph into a file in DOT format
    */
-  public synchronized void dump(){
+  public synchronized void dump(String fileName){
     
     try {
-      File outfile = new File("TXgraph.dot");
+      File outfile = new File(fileName);
       
       if(outfile.exists())      
         outfile.delete();

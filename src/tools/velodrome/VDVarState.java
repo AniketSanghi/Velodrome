@@ -39,7 +39,7 @@ public class VDVarState implements ShadowVar {
     return lastTxnPerThreadToRead;
   }
 
-  public VDTransactionNode getLastTxnToWrite() {
+  public synchronized VDTransactionNode getLastTxnToWrite() {
     if(lastTxnToWrite != null){
       if(lastTxnToWrite.isDeleted())
         lastTxnToWrite = null;
@@ -47,7 +47,7 @@ public class VDVarState implements ShadowVar {
     return lastTxnToWrite;
   }
 
-  public void setLastTxnToWrite(VDTransactionNode txn) {
+  public synchronized void setLastTxnToWrite(VDTransactionNode txn) {
     lastTxnToWrite = txn;
   }
 }
