@@ -151,7 +151,7 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(currThreadState.getLastTxnNode());
       mergeInputNodes.add(currLockState.getLastTxnThatReleasedLock());
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryAcquire");
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryAcquire", st.getTid());
       
       currThreadState.setLastTxnNode(happensAfterNode);
       threadState.set(st, currThreadState);
@@ -242,7 +242,7 @@ public class VelodromeTool extends Tool {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName );
+      currTxnNode = new VDTransactionNode(label, methodName, st.getTid() );
       label += 1;
     }
 
@@ -264,6 +264,9 @@ public class VelodromeTool extends Tool {
     currThreadState.setLastTxnNode(currTxnNode);
 
     threadState.set(st, currThreadState);
+
+    currTxnNode.txnFinished();
+    graph.GarbageCollection(currTxnNode);
   }
 
   private void read(
@@ -279,7 +282,7 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(currThreadState.getLastTxnNode());
       mergeInputNodes.add(var.getLastTxnToWrite());
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryRead");
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryRead", st.getTid());
       
       var.setLastTxnToReadForThread(st, happensAfterNode);
 
@@ -311,7 +314,7 @@ public class VelodromeTool extends Tool {
         mergeInputNodes.add(val);
       }
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryWrite");
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryWrite", st.getTid());
       
       var.setLastTxnToWrite(happensAfterNode);
 

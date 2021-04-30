@@ -29,12 +29,21 @@ public class VDVarState implements ShadowVar {
     lastTxnPerThreadToRead[st.getTid()] = txn;
   }
 
-  
   public VDTransactionNode[] getLastTxnPerThreadToReadAll() {
+    for(int i=0; i < 100; ++i){
+      if(lastTxnPerThreadToRead[i] != null){
+        if(lastTxnPerThreadToRead[i].isDeleted())
+          lastTxnPerThreadToRead[i] = null;
+      } 
+    }
     return lastTxnPerThreadToRead;
   }
 
   public VDTransactionNode getLastTxnToWrite() {
+    if(lastTxnToWrite != null){
+      if(lastTxnToWrite.isDeleted())
+        lastTxnToWrite = null;
+    }
     return lastTxnToWrite;
   }
 

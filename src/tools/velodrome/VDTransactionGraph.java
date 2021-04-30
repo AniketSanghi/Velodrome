@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Queue;
+import java.util.LinkedList;
+
 
 public class VDTransactionGraph {
 
@@ -36,9 +38,43 @@ public class VDTransactionGraph {
     if(neighbours == null) neighbours = new HashSet<VDTransactionNode>();
 
     neighbours.add(dest);
+    if(dest != null)
+      dest.incNumberOfInEdges();
     graph.put(src, neighbours);
   }
 
+  /**
+   * For garbage collection root is the given node
+   * then the BFS traversal done to identify the
+   * nodes with no parent these will be Garbage Collected
+   * @param node
+   * @return void (VDTransactionGraph will be modified)
+   */
+  public synchronized void GarbageCollection( VDTransactionNode root){
+
+    Queue<VDTransactionNode> bfsQ = new LinkedList<VDTransactionNode>();
+    bfsQ.add(root);
+
+    while(!bfsQ.isEmpty()){
+
+      VDTransactionNode parent = bfsQ.poll();                                   /** remove the parent and add the childern to the list */
+
+      if( parent.isFinished() && parent.getNumberOfInEdges()==0 && !parent.isDeleted()){             /** enqueing the children */
+        HashSet<VDTransactionNode> neighbours = graph.get(parent);
+
+        if(neighbours != null){
+          for(VDTransactionNode child: neighbours) {
+            child.decNumberOfInEdges();
+            bfsQ.add(child);
+          }
+        }
+
+        graph.remove(parent);
+        parent.txnDelete();
+      }
+    }
+
+  }
 
   /**
    * Check for a cycle in the graph
@@ -98,7 +134,8 @@ public class VDTransactionGraph {
    */
   public synchronized VDTransactionNode merge(List<VDTransactionNode> mergeInputNodes,
     Integer label,
-    String nodeName) {
+    String nodeName,
+    int tid) {
 
     // remove all the null nodes from input nodes
     mergeInputNodes.removeAll(Collections.singletonList(null));
@@ -112,7 +149,7 @@ public class VDTransactionGraph {
     
     VDTransactionNode newUnaryNode;
     synchronized (label) {
-      newUnaryNode = new VDTransactionNode(label, nodeName);
+      newUnaryNode = new VDTransactionNode(label, nodeName, tid);
       label += 1;
     }
 

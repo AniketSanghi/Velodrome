@@ -4,27 +4,32 @@ public class VDTransactionNode {
 
   private int label;
   private String methodName;
-  private int numberOfInEdges;
+  private volatile int numberOfInEdges;
   private String txnId;
 
-  public VDTransactionNode(int myLabel, String methodName) {
+  private boolean txnDeleted = false;
+  private boolean txnFinished = false;
+
+  public VDTransactionNode(int myLabel, String methodName, int tid) {
     label = myLabel;
     this.methodName = methodName;
-    this.txnId = methodName + "__" + label;
+    this.txnId = methodName + "__" + tid + "__" + myLabel;
     numberOfInEdges = 0;
   }
 
-  public String getMethodName(){
-      return methodName;
-  }
+  public int getLabel(){ return label; }
+  public String getMethodName(){ return methodName; }
+  public String getId(){ return txnId; }
 
-  public int getLabel(){
-      return label;
-  }
+  public void incNumberOfInEdges(){ ++numberOfInEdges; }
+  public void decNumberOfInEdges(){ --numberOfInEdges; }
+  public int getNumberOfInEdges(){ return numberOfInEdges; }
 
-  public String getId(){
-      return txnId;
-  }
+  public void txnDelete(){ txnDeleted = true; }
+  public boolean isDeleted(){ return txnDeleted; }
+
+  public void txnFinished(){ txnFinished = true; }
+  public boolean isFinished(){ return txnFinished; }
 
   @Override
   public int hashCode() {
