@@ -19,6 +19,10 @@ public class VDThreadState {
   }
 
   public VDTransactionNode getLastTxnNode() {
+    if(lastTxnNode != null){
+      if(lastTxnNode.isDeleted())
+        lastTxnNode = null;
+    }
     return lastTxnNode;
   }
 

@@ -13,7 +13,7 @@ public class QueueAtomic extends Thread {
     Random rand = new Random();
     // the number of threads
     static final int NumThreads = 2;
-    static final int ITERS = 100;
+    static final int ITERS = 40;
     // queue details
     static Queue<Integer> q = new LinkedList<>();
     static int size = 0;
@@ -61,7 +61,7 @@ public class QueueAtomic extends Thread {
         for(int i=0; i<ITERS; ++i){
             int operatn = i%3;
             if(operatn == 0)
-                this.enqueue(rand.nextInt(3));
+                this.enqueue(i);
             else if(operatn == 1)
                 this.dequeue();
             else if(operatn == 2)

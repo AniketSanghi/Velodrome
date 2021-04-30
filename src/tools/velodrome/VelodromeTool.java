@@ -235,7 +235,7 @@ public class VelodromeTool extends Tool {
     VDTransactionNode currTxnNode;
 
     synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName );
+      currTxnNode = new VDTransactionNode(label, methodName, st.getTid() );
       label += 1;
     }
 
@@ -257,6 +257,9 @@ public class VelodromeTool extends Tool {
     currThreadState.setLastTxnNode(currTxnNode);
 
     threadState.set(st, currThreadState);
+
+    currTxnNode.txnFinished();
+    graph.GarbageCollection(currTxnNode);
   }
 
   private void read(

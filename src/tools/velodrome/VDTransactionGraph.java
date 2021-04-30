@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Queue;
+import java.util.LinkedList;
+
 
 public class VDTransactionGraph {
 
@@ -33,9 +36,43 @@ public class VDTransactionGraph {
     if(neighbours == null) neighbours = new HashSet<VDTransactionNode>();
 
     neighbours.add(dest);
+    if(dest != null)
+      dest.incNumberOfInEdges();
     graph.put(src, neighbours);
   }
 
+  /**
+   * For garbage collection root is the given node
+   * then the BFS traversal done to identify the
+   * nodes with no parent these will be Garbage Collected
+   * @param node
+   * @return void (VDTransactionGraph will be modified)
+   */
+  public synchronized void GarbageCollection( VDTransactionNode root){
+
+    Queue<VDTransactionNode> bfsQ = new LinkedList<VDTransactionNode>();
+    bfsQ.add(root);
+
+    while(!bfsQ.isEmpty()){
+
+      VDTransactionNode parent = bfsQ.poll();                                   /** remove the parent and add the childern to the list */
+
+      if( parent.isFinished() && parent.getNumberOfInEdges()==0 && !parent.isDeleted()){             /** enqueing the children */
+        HashSet<VDTransactionNode> neighbours = graph.get(parent);
+
+        if(neighbours != null){
+          for(VDTransactionNode child: neighbours) {
+            child.decNumberOfInEdges();
+            bfsQ.add(child);
+          }
+        }
+
+        graph.remove(parent);
+        parent.txnDelete();
+      }
+    }
+
+  }
 
   /**
    * Check for a cycle in the graph
