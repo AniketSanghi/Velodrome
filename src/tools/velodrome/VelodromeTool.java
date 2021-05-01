@@ -14,6 +14,7 @@ import acme.util.decorations.DecorationFactory;
 import acme.util.decorations.DefaultValue;
 import acme.util.decorations.NullDefault;
 import acme.util.option.CommandLine;
+import acme.util.io.XMLWriter;
 import rr.annotations.Abbrev;
 import rr.barrier.BarrierMonitor;
 import rr.event.AccessEvent;
@@ -84,7 +85,7 @@ public class VelodromeTool extends Tool {
   }
 
   @Override
-  public void fini() {
+  public void printXML(XMLWriter xml) {
     System.out.println("#---#" + graph.isCyclic());
 
     try {

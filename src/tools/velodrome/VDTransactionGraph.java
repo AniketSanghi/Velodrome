@@ -164,10 +164,10 @@ public class VDTransactionGraph {
     
     if (mergeInputNodes.size() == 0) return null;
 
-    // VDTransactionNode happensAfterNode = getHappensAfterNode(mergeInputNodes);
-    // if (happensAfterNode != null) {
-    //   return happensAfterNode;
-    // }
+    VDTransactionNode happensAfterNode = getHappensAfterNode(mergeInputNodes);
+    if (happensAfterNode != null) {
+      return happensAfterNode;
+    }
     
     VDTransactionNode newUnaryNode;
     synchronized (label) {
