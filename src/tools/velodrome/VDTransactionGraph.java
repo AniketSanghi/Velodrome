@@ -17,10 +17,12 @@ public class VDTransactionGraph {
 
   private HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graph;
   private Integer label;
+  private Boolean isMicroBenchMark;
   
-  public VDTransactionGraph() {
+  public VDTransactionGraph(Boolean isMicroBM) {
     graph = new HashMap<>();
     label = 0;
+    isMicroBenchMark = isMicroBM;
   }
 
   public synchronized VDTransactionNode IncLabelAndGetNewTxn(
@@ -65,7 +67,7 @@ public class VDTransactionGraph {
     graph.put(src, neighbours);
 
     if(this.isCyclic(src)){
-      this.dump(src.getId(), dest.getId());
+      if(isMicroBenchMark) this.dump(src.getId(), dest.getId());
       neighbours.remove(dest);
       dest.decNumberOfInEdges();
       graph.put(src, neighbours);

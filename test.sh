@@ -6,7 +6,8 @@ dir=`echo $1 | rev | cut -d "/" -f 2- | rev`
 class=`echo $1 | tr "/" "."`
 
 javac "$dir"/*.java
-rrrun -tool=VD -field=FINE -array=FINE -noTidGC -availableProcessors=4 $class
+rrrun -tool=VD -isMicroBenchMark=true -exclusionListFileName=$2 -outputExclusionListFileName=$3 -field=FINE -array=FINE
+-noTidGC -availableProcessors=4 $class
 
 for dotfile in `ls *.dot`
 do

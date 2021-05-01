@@ -1,5 +1,6 @@
 package tools.velodrome;
 
+import acme.util.option.CommandLineOption;
 import java.lang.*;
 import java.util.*;
 import java.io.File;
@@ -31,6 +32,31 @@ public class VelodromeTool extends Tool {
   private VDTransactionGraph graph;
   Set<String> exclusionList = new HashSet<String>();
   Set<String> methodsViolatingAtomicity = new HashSet<>();
+  Integer[] nestingLevelCounterPerThread = new Integer[100];
+
+  private final CommandLineOption<String> exclusionListFileName =
+    CommandLine.makeString(
+      "exclusionList",
+      "",
+      CommandLineOption.Kind.EXPERIMENTAL,
+      "Get the exclusion list"
+    );
+
+  private final CommandLineOption<String> outputExclusionListFileName =
+    CommandLine.makeString(
+      "outputExclusionList",
+      "outExclusionList.txt",
+      CommandLineOption.Kind.EXPERIMENTAL,
+      "Where to print the current exclusion list"
+    );
+
+  private final CommandLineOption<Boolean> isMicroBenchMark =
+    CommandLine.makeBoolean(
+      "isMicroBenchMark",
+      false,
+      CommandLineOption.Kind.EXPERIMENTAL,
+      "Dot files to be printed in micro-benchmarks only"
+    );
 
   private final Decoration<ShadowThread, VDThreadState> threadState =
     ShadowThread.makeDecoration(
@@ -60,15 +86,19 @@ public class VelodromeTool extends Tool {
     CommandLine commandLine
   ) {
     super(name, next, commandLine);
+
+    commandLine.add(exclusionListFileName);
+    commandLine.add(outputExclusionListFileName);
+    commandLine.add(isMicroBenchMark);
   }
 
   @Override
   public void init() {
-    graph = new VDTransactionGraph();
+    graph = new VDTransactionGraph(isMicroBenchMark.get());
     /* reading the exclusion list */
     Scanner inpFile;
     try {
-      inpFile = new Scanner(new File("exclusionList"));
+      inpFile = new Scanner(new File(exclusionListFileName.get()));
       while (inpFile.hasNext()) 
         exclusionList.add(inpFile.nextLine());
     } catch (FileNotFoundException ex) {
@@ -79,7 +109,7 @@ public class VelodromeTool extends Tool {
   @Override
   public void printXML(XMLWriter xml) {
     try {
-      FileWriter fw = new FileWriter("outExclusionList.txt");
+      FileWriter fw = new FileWriter(outputExclusionListFileName.get());
    
       for (String method : methodsViolatingAtomicity) {
         fw.write(method + "\n");
@@ -98,13 +128,15 @@ public class VelodromeTool extends Tool {
     String methodName = me.getInfo().getName();
     String methodInfo = me.getInfo().getKey();
     VDThreadState currThreadState = threadState.get(st);
-    
-    if(
-      !exclusionList.contains(methodInfo) &&
-        currThreadState.getCurrentTxnNode() == null
-    )
-      enterTxn(st, methodName, methodInfo);
 
+    if(!exclusionList.contains(methodInfo)) {
+      if(currThreadState.getCurrentTxnNode() == null) {
+        nestingLevelCounterPerThread[st.getTid()] = 0;
+        enterTxn(st, methodName, methodInfo);
+      } else {
+        nestingLevelCounterPerThread[st.getTid()] += 1;
+      }
+    }
 
     super.enter(me);
   }
@@ -113,16 +145,11 @@ public class VelodromeTool extends Tool {
   public void exit(MethodEvent me) {
     ShadowThread st = me.getThread();
     String methodInfo = me.getInfo().getKey();
-    VDThreadState currThreadState = threadState.get(st);
 
-    if(
-      !exclusionList.contains(methodInfo) &&
-      currThreadState
-        .getCurrentTxnNode()
-        .getMethodInfo()
-        .equals(me.getInfo().getKey())
-    )
-      exitTxn(st);
+    if(!exclusionList.contains(methodInfo)) {
+      if(nestingLevelCounterPerThread[st.getTid()] == 0) exitTxn(st);
+      else nestingLevelCounterPerThread[st.getTid()] -= 1;
+    }
 
     super.exit(me);
   }
