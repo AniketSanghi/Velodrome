@@ -8,29 +8,22 @@ import java.io.IOException;
 import java.io.FileWriter;
 
 import acme.util.Assert;
-import acme.util.Util;
 import acme.util.decorations.Decoration;
 import acme.util.decorations.DecorationFactory;
 import acme.util.decorations.DefaultValue;
-import acme.util.decorations.NullDefault;
 import acme.util.option.CommandLine;
 import acme.util.io.XMLWriter;
 import rr.annotations.Abbrev;
-import rr.barrier.BarrierMonitor;
 import rr.event.AccessEvent;
 import rr.event.AcquireEvent;
-import rr.event.FieldAccessEvent;
 import rr.event.MethodEvent;
 import rr.event.NewThreadEvent;
 import rr.event.ReleaseEvent;
 import rr.event.VolatileAccessEvent;
-import rr.meta.ClassInfo;
 import rr.state.ShadowLock;
 import rr.state.ShadowThread;
 import rr.state.ShadowVar;
 import rr.tool.Tool;
-import tools.util.Epoch;
-import tools.util.VectorClock;
 
 @Abbrev("VD")
 public class VelodromeTool extends Tool {
@@ -74,20 +67,17 @@ public class VelodromeTool extends Tool {
     graph = new VDTransactionGraph();
     /* reading the exclusion list */
     Scanner inpFile;
-    try{
+    try {
       inpFile = new Scanner(new File("exclusionList"));
       while (inpFile.hasNext()) 
         exclusionList.add(inpFile.nextLine());
-    }catch (FileNotFoundException ex) {
+    } catch (FileNotFoundException ex) {
       System.out.println("There is a problem in File reading");
     }
-
   }
 
   @Override
   public void printXML(XMLWriter xml) {
-    System.out.println("#---#" + graph.isCyclic());
-
     try {
       FileWriter fw = new FileWriter("outExclusionList.txt");
    
@@ -115,13 +105,13 @@ public class VelodromeTool extends Tool {
     )
       enterTxn(st, methodName, methodInfo);
 
+
     super.enter(me);
   }
 
   @Override
   public void exit(MethodEvent me) {
     ShadowThread st = me.getThread();
-    String methodName = me.getInfo().getName();
     String methodInfo = me.getInfo().getKey();
     VDThreadState currThreadState = threadState.get(st);
 
@@ -144,10 +134,6 @@ public class VelodromeTool extends Tool {
 
   @Override
   public void create(NewThreadEvent event) {
-    final ShadowThread st = event.getThread();
-
-    // TODO: If anything to be done
-
     super.create(event);
   }
 
@@ -166,13 +152,19 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(currThreadState.getLastTxnNode());
       mergeInputNodes.add(currLockState.getLastTxnThatReleasedLock());
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, "UnaryAcquire", st.getTid());
+      VDTransactionNode happensAfterNode =
+        graph.merge(mergeInputNodes, "UnaryAcquire", st.getTid());
       
       currThreadState.setLastTxnNode(happensAfterNode);
       threadState.set(st, currThreadState);
     }
     else {
-      graph.addEdge(currLockState.getLastTxnThatReleasedLock(), currTxnNode, methodsViolatingAtomicity);
+      graph
+        .addEdge(
+          currLockState.getLastTxnThatReleasedLock(),
+          currTxnNode,
+          methodsViolatingAtomicity
+        );
     }
 
     super.acquire(event);
@@ -247,19 +239,29 @@ public class VelodromeTool extends Tool {
   @Override
   public void volatileAccess(final VolatileAccessEvent event) {
     final ShadowThread st = event.getThread();
+    final ShadowVar var = getOriginalOrBad(event.getOriginalShadow(), st);
 
-    // Extra work
+    if (var instanceof VDVarState) { // shadow instanceof FTVarState
+      VDThreadState currThreadState = threadState.get(st);
+      VDTransactionNode currTxnNode = currThreadState.getCurrentTxnNode();
+      VDVarState currVar = (VDVarState) var;
 
-    super.volatileAccess(event);
+      if(event.isWrite()) {
+        write(st, currTxnNode, currVar);
+      } else {
+        read(st, currTxnNode, currVar);
+      }
+
+    } else {
+      super.volatileAccess(event);
+    }
   }
 
   private void enterTxn(ShadowThread st, String methodName, String methodInfo) {
     VDTransactionNode currTxnNode;
 
-    synchronized (graph.label) {
-      currTxnNode = new VDTransactionNode(graph.label, methodName, st.getTid(), methodInfo);
-      graph.label += 1;
-    }
+    currTxnNode =
+      graph.IncLabelAndGetNewTxn(methodName, st.getTid(), methodInfo);
 
     VDThreadState currThreadState = threadState.get(st);
 
@@ -280,7 +282,7 @@ public class VelodromeTool extends Tool {
 
     threadState.set(st, currThreadState);
 
-    currTxnNode.txnFinished();
+    currTxnNode.markTxnAsFinished();
 
     // Comment below line to not do GC
     graph.GarbageCollection(currTxnNode);
@@ -299,16 +301,17 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(currThreadState.getLastTxnNode());
       mergeInputNodes.add(var.getLastTxnToWrite());
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, "UnaryRead", st.getTid());
+      VDTransactionNode happensAfterNode =
+        graph.merge(mergeInputNodes, "UnaryRead", st.getTid());
       
       var.setLastTxnToReadForThread(st, happensAfterNode);
 
       currThreadState.setLastTxnNode(happensAfterNode);
       threadState.set(st, currThreadState);
-    }
-    else {
+    } else {
       var.setLastTxnToReadForThread(st, currTxnNode);
-      graph.addEdge(var.getLastTxnToWrite(), currTxnNode, methodsViolatingAtomicity);
+      graph
+        .addEdge(var.getLastTxnToWrite(), currTxnNode, methodsViolatingAtomicity);
     }
   }
 
@@ -326,12 +329,11 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(var.getLastTxnToWrite());
 
       VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
-      
-      for(VDTransactionNode val: values) {
-        mergeInputNodes.add(val);
-      }
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, "UnaryWrite", st.getTid());
+      mergeInputNodes.addAll(Arrays.asList(values));
+
+      VDTransactionNode happensAfterNode =
+        graph.merge(mergeInputNodes, "UnaryWrite", st.getTid());
       
       var.setLastTxnToWrite(happensAfterNode);
 
@@ -339,15 +341,12 @@ public class VelodromeTool extends Tool {
       threadState.set(st, currThreadState);
     }
     else {
-      var.setLastTxnToWrite(currTxnNode);
       graph.addEdge(var.getLastTxnToWrite(), currTxnNode, methodsViolatingAtomicity);
-  
-      VDTransactionNode[] values = var.getLastTxnPerThreadToReadAll();
-      
-      for(VDTransactionNode val: values) {
+      var.setLastTxnToWrite(currTxnNode);
+
+      for(VDTransactionNode val: var.getLastTxnPerThreadToReadAll()) {
         graph.addEdge(val, currTxnNode, methodsViolatingAtomicity);
       }
     }
-
   }
 }

@@ -2,25 +2,22 @@ package tools.velodrome;
 
 public class VDTransactionNode {
 
-  private int label;
-  private String methodName;
-  private String methodInfo;
+  final private int label;
+  final private String methodInfo;
   private int numberOfInEdges;
-  private String txnId;
+  final private String txnId;
 
   private boolean txnDeleted = false;
   private boolean txnFinished = false;
 
   public VDTransactionNode(int myLabel, String methodName, int tid, String methodInfo) {
     label = myLabel;
-    this.methodName = methodName;
     this.methodInfo = methodInfo;
     this.txnId = methodName + "__" + tid + "__" + myLabel;
     numberOfInEdges = 0;
   }
 
   public int getLabel(){ return label; }
-  public String getMethodName(){ return methodName; }
   public String getMethodInfo(){ return methodInfo; }
   public String getId(){ return txnId; }
 
@@ -28,10 +25,10 @@ public class VDTransactionNode {
   public synchronized void decNumberOfInEdges(){ --numberOfInEdges; }
   public synchronized int getNumberOfInEdges(){ return numberOfInEdges; }
 
-  public void txnDelete(){ txnDeleted = true; }
+  public void markTxnAsDeleted(){ txnDeleted = true; }
   public boolean isDeleted(){ return txnDeleted; }
 
-  public void txnFinished(){ txnFinished = true; }
+  public void markTxnAsFinished(){ txnFinished = true; }
   public boolean isFinished(){ return txnFinished; }
 
   @Override
@@ -51,10 +48,7 @@ public class VDTransactionNode {
       return false;
     }
     VDTransactionNode other = (VDTransactionNode) o;
-    if (this.label != other.label) {
-      return false;
-    }
-    return true;
+    return this.label == other.label;
   }
 
 }

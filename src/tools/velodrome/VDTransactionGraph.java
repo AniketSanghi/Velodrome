@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Collections;
 import java.util.Queue;
 import java.util.LinkedList;
@@ -17,11 +16,20 @@ import java.util.LinkedList;
 public class VDTransactionGraph {
 
   private HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graph;
-  public Integer label;
+  private Integer label;
   
   public VDTransactionGraph() {
     graph = new HashMap<>();
     label = 0;
+  }
+
+  public synchronized VDTransactionNode IncLabelAndGetNewTxn(
+    String methodName,
+    int tid,
+    String methodInfo
+  ) {
+    label += 1;
+    return new VDTransactionNode(label-1, methodName, tid, methodInfo);
   }
 
   /**
@@ -35,8 +43,15 @@ public class VDTransactionGraph {
     VDTransactionNode dest,
     Set<String> methodsViolatingAtomicity
   ) {
-    if(src == dest || src == null || dest == null || src.isDeleted() || dest.isDeleted())
+    if(
+      src == dest ||
+        src == null ||
+        dest == null ||
+        src.isDeleted() ||
+        dest.isDeleted()
+    ) {
       return;
+    }
 
     HashSet<VDTransactionNode> neighbours = graph.get(src);
 
@@ -49,7 +64,7 @@ public class VDTransactionGraph {
     dest.incNumberOfInEdges();
     graph.put(src, neighbours);
 
-    if(this.isCyclic()){
+    if(this.isCyclic(src)){
       this.dump(src.getId(), dest.getId());
       neighbours.remove(dest);
       dest.decNumberOfInEdges();
@@ -57,7 +72,6 @@ public class VDTransactionGraph {
 
       if (methodsViolatingAtomicity != null)
         methodsViolatingAtomicity.add(dest.getMethodInfo());
-      return;
     }
   }
 
@@ -65,19 +79,24 @@ public class VDTransactionGraph {
    * For garbage collection root is the given node
    * then the BFS traversal done to identify the
    * nodes with no parent these will be Garbage Collected
-   * @param node
-   * @return void (VDTransactionGraph will be modified)
+   * @param root Check if no in-edges and remove recursively
    */
-  public synchronized void GarbageCollection( VDTransactionNode root){
+  public synchronized void GarbageCollection(VDTransactionNode root){
 
     Queue<VDTransactionNode> bfsQ = new LinkedList<VDTransactionNode>();
     bfsQ.add(root);
 
     while(!bfsQ.isEmpty()){
 
-      VDTransactionNode parent = bfsQ.poll();                                   /** remove the parent and add the childern to the list */
+      // Process parent and delete it
+      VDTransactionNode parent = bfsQ.poll();
 
-      if( parent.isFinished() && parent.getNumberOfInEdges()==0 && !parent.isDeleted()){             /** enqueing the children */
+      // Enqueue the child nodes if this was their only parent
+      if (
+        parent.isFinished() &&
+          parent.getNumberOfInEdges()==0 &&
+          !parent.isDeleted()
+      ) {
         HashSet<VDTransactionNode> neighbours = graph.get(parent);
 
         if(neighbours != null){
@@ -88,7 +107,7 @@ public class VDTransactionGraph {
         }
 
         graph.remove(parent);
-        parent.txnDelete();
+        parent.markTxnAsDeleted();
       }
     }
 
@@ -112,13 +131,26 @@ public class VDTransactionGraph {
   }
 
   /**
-   * Utility function for DFS traversal
-   * @param node
-   * @return
+   * Check for a cycle in the graph when a new edge is added
    */
-  private boolean dfsUtil(VDTransactionNode node, 
+  public synchronized boolean isCyclic(VDTransactionNode node) {
+
+    HashSet<VDTransactionNode> visited = new HashSet<>();
+    HashSet<VDTransactionNode> active = new HashSet<>();
+
+    return dfsUtil(node, visited, active);
+  }
+
+  /**
+   * Utility function for DFS traversal
+   * @param node: DFS Root
+   * @return boolean: True if cycle exists
+   */
+  private boolean dfsUtil(
+    VDTransactionNode node,
     HashSet<VDTransactionNode> visited, 
-    HashSet<VDTransactionNode> active){
+    HashSet<VDTransactionNode> active
+  ){
     
     if(!visited.contains(node)){  
       HashSet<VDTransactionNode> neighbours = graph.get(node);
@@ -127,34 +159,35 @@ public class VDTransactionGraph {
       active.add(node);
 
       if(neighbours == null){
-        // System.out.println("return false " + node.getLabel());
         active.remove(node);
         return false;
       }
 
-      for(VDTransactionNode neighbour : neighbours ){
-        if(!visited.contains(neighbour) && 
-          dfsUtil(neighbour, visited, active)){
+      for(VDTransactionNode neighbour : neighbours) {
+        if(
+          !visited.contains(neighbour) &&
+            dfsUtil(neighbour, visited, active)
+        ) {
           return true;
-        }else if(active.contains(neighbour)){
+        } else if (active.contains(neighbour)) {
           return true;
         }
       }
     }
     active.remove(node);
-    // System.out.println("return false " + node.getLabel());
     return false;
   }
 
   /**
-   * find a possible happens-after node (or a completely new node)
+   * Find a possible happens-after node (or a completely new node)
    * for the given list of nodes and update graph accordingly
    */
-  public synchronized VDTransactionNode merge(List<VDTransactionNode> mergeInputNodes,
+  public synchronized VDTransactionNode merge(
+    List<VDTransactionNode> mergeInputNodes,
     String nodeName,
-    int tid) {
-
-    // remove all the null nodes and logically deleted nodes from input nodes
+    int tid
+  ) {
+    // Remove all the null nodes and logically deleted nodes from input nodes
     for (int i = 0; i < mergeInputNodes.size(); i++) {
       if (mergeInputNodes.get(i) != null && mergeInputNodes.get(i).isDeleted()) {
         mergeInputNodes.set(i, null);
@@ -170,10 +203,7 @@ public class VDTransactionGraph {
     }
     
     VDTransactionNode newUnaryNode;
-    synchronized (label) {
-      newUnaryNode = new VDTransactionNode(label, nodeName, tid, null);
-      label += 1;
-    }
+    newUnaryNode = IncLabelAndGetNewTxn(nodeName, tid, null);
 
     for(VDTransactionNode node: mergeInputNodes) {
       addEdge(node, newUnaryNode, null);
@@ -185,8 +215,9 @@ public class VDTransactionGraph {
   /**
    * returns a happens-after node if possible or null
    */
-  public VDTransactionNode getHappensAfterNode(List<VDTransactionNode> mergeInputNodes) {
-
+  public VDTransactionNode getHappensAfterNode(
+    List<VDTransactionNode> mergeInputNodes
+  ) {
     HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graphReverse = getReverseGraph();
 
     HashSet<VDTransactionNode> notPossibleHappensBeforeNodes = new HashSet<>();
@@ -218,12 +249,13 @@ public class VDTransactionGraph {
   }
 
   /**
-   * dfs for unary transactions optimization
+   * Dfs for unary transactions optimization
    */
-  public void dfsUnaryNodes(HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graphReverse,
+  public void dfsUnaryNodes(
+    HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graphReverse,
     VDTransactionNode node,
-    HashSet<VDTransactionNode> visited) {
-
+    HashSet<VDTransactionNode> visited
+  ) {
     visited.add(node);
 
     HashSet<VDTransactionNode> neighbors = graphReverse.get(node);
@@ -236,7 +268,6 @@ public class VDTransactionGraph {
         dfsUnaryNodes(graphReverse, neighbor, visited);
       }
     }
-
   }
 
   /**
@@ -301,7 +332,7 @@ public class VDTransactionGraph {
         for(VDTransactionNode node2 : edges ){
 
           String graphConfigure = "";
-          if (node1.getId() == srcId && node2.getId() == destId) {
+          if (node1.getId().equals(srcId) && node2.getId().equals(destId)) {
             graphConfigure = "[penwidth=5]";
           }
           fout.write("  " + node1.getId() + " -> " + node2.getId() + graphConfigure + ";\n");
@@ -317,5 +348,4 @@ public class VDTransactionGraph {
       e.printStackTrace();
     }
   }
-
 }

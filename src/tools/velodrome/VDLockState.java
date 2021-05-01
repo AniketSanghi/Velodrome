@@ -9,10 +9,8 @@ public class VDLockState {
   }
 
   public synchronized VDTransactionNode getLastTxnThatReleasedLock() {
-    if(lockReleaseLastTxn != null){
-      if(lockReleaseLastTxn.isDeleted())
+    if(lockReleaseLastTxn != null && lockReleaseLastTxn.isDeleted())
         lockReleaseLastTxn = null;
-    }
     return lockReleaseLastTxn;
   }
 
