@@ -1,0 +1,5 @@
+RRBench.iterate()V
+Index.main(Ljava/io/File;[Ljava/lang/String;)V
+org/apache/lucene/index/IndexWriter.optimize()V
+org/apache/lucene/index/IndexWriter.optimize(Z)V
+org/apache/lucene/index/IndexWriter.optimize(IZ)V

@@ -1,0 +1,9 @@
+avrora/sim/SimulatorThread.run()V
+avrora/sim/Simulator.start()V
+avrora/sim/AtmelInterpreter.start()V
+avrora/arch/legacy/LegacyInterpreter.runLoop()V
+avrora/arch/legacy/LegacyInterpreter.fastLoop()V
+avrora/sim/AtmelInterpreter.advanceClock(J)V
+avrora/sim/clock/MainClock.advance(J)V
+avrora/sim/clock/DeltaQueue.advance(J)V
+avrora/sim/clock/DeltaQueue.advanceSlow(J)V
