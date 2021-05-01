@@ -1,3 +1,0 @@
-testcases/MicroBenchmarks/self/QueueNotAtomic.run()V
-testcases/MicroBenchmarks/self/QueueNotAtomic.dequeue()V
-testcases/MicroBenchmarks/self/QueueNotAtomic.enqueue(I)V

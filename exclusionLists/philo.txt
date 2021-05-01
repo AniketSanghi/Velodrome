@@ -1,0 +1,2 @@
+Philo.run()V
+Table.getForks(I)I
