@@ -34,7 +34,6 @@ import tools.util.VectorClock;
 @Abbrev("VD")
 public class VelodromeTool extends Tool {
 
-  private Integer label;
   private VDTransactionGraph graph;
   Set<String> exclusionList = new HashSet<String>();
   Set<String> methodsViolatingAtomicity = new HashSet<>();
@@ -71,7 +70,6 @@ public class VelodromeTool extends Tool {
 
   @Override
   public void init() {
-    label  = 0;
     graph = new VDTransactionGraph();
     /* reading the exclusion list */
     Scanner inpFile;
@@ -167,7 +165,7 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(currThreadState.getLastTxnNode());
       mergeInputNodes.add(currLockState.getLastTxnThatReleasedLock());
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryAcquire", st.getTid());
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, "UnaryAcquire", st.getTid());
       
       currThreadState.setLastTxnNode(happensAfterNode);
       threadState.set(st, currThreadState);
@@ -257,9 +255,9 @@ public class VelodromeTool extends Tool {
   private void enterTxn(ShadowThread st, String methodName, String methodInfo) {
     VDTransactionNode currTxnNode;
 
-    synchronized (label) {
-      currTxnNode = new VDTransactionNode(label, methodName, st.getTid(), methodInfo);
-      label += 1;
+    synchronized (graph.label) {
+      currTxnNode = new VDTransactionNode(graph.label, methodName, st.getTid(), methodInfo);
+      graph.label += 1;
     }
 
     VDThreadState currThreadState = threadState.get(st);
@@ -300,7 +298,7 @@ public class VelodromeTool extends Tool {
       mergeInputNodes.add(currThreadState.getLastTxnNode());
       mergeInputNodes.add(var.getLastTxnToWrite());
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryRead", st.getTid());
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, "UnaryRead", st.getTid());
       
       var.setLastTxnToReadForThread(st, happensAfterNode);
 
@@ -332,7 +330,7 @@ public class VelodromeTool extends Tool {
         mergeInputNodes.add(val);
       }
 
-      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, label, "UnaryWrite", st.getTid());
+      VDTransactionNode happensAfterNode = graph.merge(mergeInputNodes, "UnaryWrite", st.getTid());
       
       var.setLastTxnToWrite(happensAfterNode);
 

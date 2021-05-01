@@ -17,9 +17,11 @@ import java.util.LinkedList;
 public class VDTransactionGraph {
 
   private HashMap<VDTransactionNode, HashSet<VDTransactionNode> > graph;
+  public Integer label;
   
   public VDTransactionGraph() {
     graph = new HashMap<>();
+    label = 0;
   }
 
   /**
@@ -149,7 +151,6 @@ public class VDTransactionGraph {
    * for the given list of nodes and update graph accordingly
    */
   public synchronized VDTransactionNode merge(List<VDTransactionNode> mergeInputNodes,
-    Integer label,
     String nodeName,
     int tid) {
 
@@ -163,10 +164,10 @@ public class VDTransactionGraph {
     
     if (mergeInputNodes.size() == 0) return null;
 
-    VDTransactionNode happensAfterNode = getHappensAfterNode(mergeInputNodes);
-    if (happensAfterNode != null) {
-      return happensAfterNode;
-    }
+    // VDTransactionNode happensAfterNode = getHappensAfterNode(mergeInputNodes);
+    // if (happensAfterNode != null) {
+    //   return happensAfterNode;
+    // }
     
     VDTransactionNode newUnaryNode;
     synchronized (label) {
