@@ -50,10 +50,10 @@ public class VelodromeTool extends Tool {
       "Where to print the current exclusion list"
     );
 
-  private final CommandLineOption<Boolean> isMicroBenchMark =
-    CommandLine.makeBoolean(
+  private final CommandLineOption<Integer> isMicroBenchMark =
+    CommandLine.makeInteger(
       "isMicroBenchMark",
-      false,
+      0,
       CommandLineOption.Kind.EXPERIMENTAL,
       "Dot files to be printed in micro-benchmarks only"
     );
